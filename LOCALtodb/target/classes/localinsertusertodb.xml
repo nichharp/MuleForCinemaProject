@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:cors="http://www.mulesoft.org/schema/mule/cors"
+	xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
+	xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:json="http://www.mulesoft.org/schema/mule/json"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/cors http://www.mulesoft.org/schema/mule/cors/current/mule-cors.xsd">
+
+	<cors:config name="Cors_Configuration" doc:name="Cors Configuration">
+        <cors:origins>
+            <cors:origin url="http://localhost:8081">
+                <cors:methods>
+                    <cors:method>POST</cors:method>
+                    <cors:method>DELETE</cors:method>
+                    <cors:method>PUT</cors:method>
+                    <cors:method>GET</cors:method>
+                </cors:methods>
+                <cors:headers>
+                    <cors:header>content-type</cors:header>
+                </cors:headers>
+            </cors:origin>
+            <cors:origin url="http://localhost:34001">
+                <cors:methods>
+                    <cors:method>GET</cors:method>
+                </cors:methods>
+            </cors:origin>
+        </cors:origins>
+	</cors:config>
+	<db:mysql-config name="MySQL_Configuration" host="sql8.freemysqlhosting.net"
+		port="3306" user="sql8195460" password="FKyNi5wWFn" database="sql8195460"
+		doc:name="MySQL Configuration" />
+	<!-- <http:listener-config name="HTTP_Listener_Configuration" host="151.101.1.147" 
+		port="433" doc:name="HTTP Listener Configuration"/> -->
+	<http:listener-config name="HTTP_Listener_Configuration"
+		host="localhost" port="8081" doc:name="HTTP Listener Configuration" />
+	<cors:config name="Cors_Configuration" doc:name="Cors Configuration">
+		<cors:origins>
+			<cors:origin url="http://localhost:34001">
+				<cors:methods>
+					<cors:method>GET</cors:method>
+				</cors:methods>
+			</cors:origin>
+		</cors:origins>
+	</cors:config>
+	<cors:config name="Cors_Configuration" doc:name="Cors Configuration">
+		<cors:origins>
+			<cors:origin url="http://localhost:34001">
+				<cors:methods>
+					<cors:method>GET</cors:method>
+				</cors:methods>
+			</cors:origin>
+		</cors:origins>
+	</cors:config>
+	<cors:config name="Cors_Configurationblah" doc:name="Cors Configuration">
+		<cors:origins>
+			<cors:origin url="http://localhost:34001">
+				<cors:methods>
+					<cors:method>GET</cors:method>
+				</cors:methods>
+			</cors:origin>
+		</cors:origins>
+	</cors:config>
+	<cors:config name="Cors_Configuration" doc:name="Cors Configuration">
+		<cors:origins>
+			<cors:origin url="http://localhost:34001">
+				<cors:methods>
+					<cors:method>GET</cors:method>
+					<cors:method>GET</cors:method>
+				</cors:methods>
+			</cors:origin>
+		</cors:origins>
+	</cors:config>
+	<flow name="Local_RegUserFlowk">
+		<http:listener config-ref="HTTP_Listener_Configuration"
+			path="/CreateUser" doc:name="Local_HTTP" allowedMethods="POST" />
+		<logger message="My Payload #[payload]" level="INFO" doc:name="Copy_of_Logger" />
+		<json:json-to-object-transformer
+			returnClass="java.lang.Object" doc:name="JSON to Object" />
+		<logger message="My Payload #[payload]" level="INFO" doc:name="Logger" />
+		<db:insert config-ref="MySQL_Configuration" doc:name="Reg_Database">
+			<db:parameterized-query><![CDATA[INSERT INTO User(Username, FullName, Email, Age, Phone, Password, AccessLevel) VALUES(#[message.payload.Username],#[message.payload.FullName],#[message.payload.Email],#[message.payload.Age],#[message.payload.Phone],#[message.payload.Password],'customer');]]></db:parameterized-query>
+		</db:insert>
+        <json:object-to-json-transformer mimeType="text/html" doc:name="Copy_of_Object to JSON"/>
+	</flow>
+	<flow name="Local_signinFlowk">
+		<http:listener config-ref="HTTP_Listener_Configuration"
+			path="SignIn" allowedMethods="POST, GET" doc:name="Local_HTTP" />
+			<cors:validate config-ref="Cors_Configuration"
+publicResource="true" acceptsCredentials="false" doc:name="CORS Validate" /><json:json-to-object-transformer
+			returnClass="java.lang.Object" doc:name="JSON to Object" />
+		<db:select config-ref="MySQL_Configuration" doc:name="Sign_In_of_Database">
+			<db:parameterized-query><![CDATA[SELECT * FROM User WHERE Username=#[message.inboundProperties.'http.query.params'.Username] AND Password=#[message.inboundProperties.'http.query.params'.Password]]]></db:parameterized-query>
+		</db:select>
+		<json:object-to-json-transformer
+			 doc:name="Object to JSON" mimeType="text/html"/>
+	</flow>
+	<flow name="Local_ForgotPass_Flow">
+		<http:listener config-ref="HTTP_Listener_Configuration"
+			path="ForgotPassword" allowedMethods="GET" doc:name="Local_HTTP" />
+		<json:json-to-object-transformer
+			returnClass="java.lang.Object" doc:name="JSON to Object" />
+		<db:select config-ref="MySQL_Configuration" doc:name="Forgot_Database">
+            <db:parameterized-query><![CDATA[SELECT * FROM User WHERE Email=#[message.inboundProperties.'http.query.params'.Email];]]></db:parameterized-query>
+		</db:select>
+        <json:object-to-json-transformer mimeType="text/html" doc:name="Copy_of_Object to JSON"/>
+	</flow>
+	<flow name="Local_CheckADMIN_Flow">
+		<http:listener config-ref="HTTP_Listener_Configuration"
+			path="CheckAdmin" allowedMethods="GET" doc:name="Local_HTTP" />
+		<json:json-to-object-transformer
+			returnClass="java.lang.Object" doc:name="JSON to Object" />
+		<db:select config-ref="MySQL_Configuration" doc:name="Add_Screen_Database">
+			<db:parameterized-query><![CDATA[SELECT * FROM Admin WHERE Username=#[payload.message.Username] AND Password=#[payload.message.Password]]]></db:parameterized-query>
+		</db:select>
+	</flow>
+	<flow name="Local_insertIntoScreeningFlow">
+		<http:listener config-ref="HTTP_Listener_Configuration"
+			path="InsertIntoScreening" allowedMethods="POST" doc:name="Local_HTTP" />
+		<json:json-to-object-transformer
+			returnClass="java.lang.Object" doc:name="JSON to Object" />
+		<db:insert config-ref="MySQL_Configuration" doc:name="Screening_Database">
+			<db:parameterized-query><![CDATA[INSERT INTO Screening (ScreenNumber, MovieID, Timeslot) VALUES(#[message.payload.ScreenNumber],#[message.payload.MovieID],#[message.payload.Timeslot]);]]></db:parameterized-query>
+		</db:insert>
+	</flow>
+</mule>
